@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <nav>
+            <a href="">PY-EDITOR +</a>
+        </nav>
+
+        <div class="content">
+            <h1>Upload the document to Edit</h1>
+            <form action="/upload" method="POST" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </main>
+
+
+
+
+    <script src="script.js"></script>
+</body>
+</html>

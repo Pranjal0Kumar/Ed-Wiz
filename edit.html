@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+
+
+
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .pdfPage {
+            position: relative; /* Positioning context for canvases */
+            margin-bottom: 10px; /* Spacing between pages */
+        }
+        #pdfContainer {
+            overflow-y: auto; /* Enable vertical scrolling */
+            height: 90vh; /* Height of the container */
+            border: 1px solid #000;
+        }
+        canvas {
+            border: 1px solid #000;
+            box-sizing: border-box;
+            display: block; /* Ensures canvases don't have whitespace */
+            width: 100%; /* Make canvas take full width */
+        }
+
+        .annotationCanvas {
+            position: absolute; /* Position over the PDF canvas */
+            top: 0;
+            left: 0;
+            pointer-events: all; /* Enable mouse events for annotations */
+        }
+    </style>
+
+
+
+
+
+</head>
+
+
+
+
+<body>
+
+
+
+    <BUTTON id="download">Download</BUTTON>
+    <button id="clear">Clear Annotation</button>
+    <div id="pdfContainer">
+        <!-- Canvases will be added here dynamically -->
+    </div>
+
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js" integrity="sha512-Z8CqofpIcnJN80feS2uccz+pXWgZzeKxDsDNMD/dJ6997/LSRY+W4NmEt9acwR+Gt9OHN0kkI1CTianCwoqcjQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+
+
+
+
+    <script>
+        const pdfUrl = '/pdf'; // URL to your PDF
+        let pdfDoc = null;
+        const container = document.getElementById('pdfContainer');
+        let isDrawing = false;
+        let startX, startY;
+        let annotationCanvases = [];
+        const scale = 1.5;
+
+
+
+
+
+        // Load PDF document
+        pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
+            pdfDoc = doc;
+            renderAllPages(); // Render all pages on load
+        }).catch(error => {
+            console.error("Error loading PDF:", error);
+        });
+
+
+
+
+
+        // Render all pages
+        async function renderAllPages() {
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                const page = await pdfDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: scale });
+
+                // Create a container for each page
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdfPage';
+
+                // Create a canvas for each page
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+
+
+                const annotationCanvas = document.createElement('canvas');
+                const annotationContext = annotationCanvas.getContext('2d');
+                annotationCanvas.width = viewport.width;
+                annotationCanvas.height = viewport.height;
+                annotationCanvas.className = 'annotationCanvas'; // Add class for styling
+
+                
+
+                // Render page into canvas
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                await page.render(renderContext).promise;
+
+                // Append the canvas to the container
+                pageDiv.appendChild(canvas);
+                pageDiv.appendChild(annotationCanvas);
+                container.appendChild(pageDiv);
+
+                annotationCanvases.push(annotationCanvas);
+
+                annotationCanvas.addEventListener('mousedown',(event) =>{
+                    startDrawing(event,annotationContext);
+                })
+
+                annotationCanvas.addEventListener('mousemove',(event) => {
+                    draw(event,annotationContext);
+                })
+
+                annotationCanvas.addEventListener('mouseup',(event) => {
+                    stopDrawing();
+                })
+
+                annotationCanvas.addEventListener('mouseout',(event) => {
+                    stopDrawing();
+                })
+
+            }
+        }
+
+
+
+
+        function startDrawing(event, context){
+            isDrawing = true;
+            startX = event.offsetX;
+            startY = event.offsetY;
+        }
+
+        function stopDrawing(){
+            isDrawing = false;
+        }
+
+        function draw(event, context) {
+            if (!isDrawing) return; // Prevent drawing if not in drawing mode
+
+            const x = event.offsetX; // Directly use offsetX
+            const y = event.offsetY; // Directly use offsetY
+
+            context.lineTo(x, y); // Draw a line to the current position
+            context.strokeStyle = 'red'; // Change to your desired color
+            context.lineWidth = 2; // Change to your desired line width
+            context.stroke(); // Actually draw the line
+
+            // Update starting coordinates
+            startX = x; 
+            startY = y; 
+        }
+
+
+
+
+
+
+
+
+
+
+
+        document.getElementById('clear').addEventListener('click', () => {
+            annotationContext.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+        });
+
+
+
+
+        document.getElementById('download').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = 'downloaded.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+
+
+
+    </script>
+
+
+
+
+</body>
+
+
+
+
+</html>
